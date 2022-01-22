@@ -20,6 +20,7 @@ import {
     FlapAbstract,
     DSTokenAbstract,
     DaiJoinAbstract,
+    DaiAbstract,
     VatAbstract
 } from "dss-interfaces/Interfaces.sol";
 
@@ -38,6 +39,7 @@ contract FlapperMassBid {
     VowAbstract public immutable vow;
     FlapAbstract public immutable flap;
     DaiJoinAbstract public immutable daiJoin;
+    DaiAbstract public immutable dai;
     VatAbstract public immutable vat;
     DSTokenAbstract public immutable mkr;
 
@@ -46,6 +48,7 @@ contract FlapperMassBid {
         vow = VowAbstract(_vow);
         flap = FlapAbstract(vow.flapper());
         daiJoin = DaiJoinAbstract(_daiJoin);
+        dai = DaiAbstract(daiJoin.dai());
         vat = VatAbstract(daiJoin.vat());
         mkr = DSTokenAbstract(flap.gem());
 
@@ -130,7 +133,7 @@ contract FlapperMassBid {
         mkr.transfer(owner, mkr.balanceOf(address(this)));
     }
 
-    function extractDAI() external {
+    function extractVatDAI() external {
         require(msg.sender == owner, "only-owner");
 
         // Pull DAI out of vat (if any)
@@ -142,6 +145,14 @@ contract FlapperMassBid {
 
         // Pull MKR out of here (it will show up if outbid)
         mkr.transfer(owner, mkr.balanceOf(address(this)));
+    }
+
+    // This should never have DAI in it, but let's just be safe
+    function extractDAI() external {
+        require(msg.sender == owner, "only-owner");
+
+        // Pull MKR out of here (it will show up if outbid)
+        dai.transfer(owner, dai.balanceOf(address(this)));
     }
 
 }

@@ -79,7 +79,7 @@ contract FlapperMassBidTest is DSSTest {
     function test_gas_search_300_for_50() public {
         uint256 startGas = gasleft();
         bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 300 - 1, 50, 15 ether);
-        emit log_named_uint("gas", gasleft() - startGas);
+        emit log_named_uint("gas", startGas - gasleft());
     }
 
     function test_gas_bid_50() public {
@@ -91,7 +91,7 @@ contract FlapperMassBidTest is DSSTest {
 
         uint256 startGas = gasleft();
         bidder.execute(data);
-        emit log_named_uint("gas", gasleft() - startGas);
+        emit log_named_uint("gas", startGas - gasleft());
     }
 
     function test_bid_deal_5() public {
@@ -116,7 +116,7 @@ contract FlapperMassBidTest is DSSTest {
 
         assertEq(mcd.vat().dai(address(bidder)), 5 * mcd.vow().bump());
 
-        bidder.extractDAI();
+        bidder.extractVatDAI();
 
         assertEq(mcd.dai().balanceOf(address(this)), 5 * mcd.vow().bump() / RAY);
     }
