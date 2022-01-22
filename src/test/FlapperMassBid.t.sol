@@ -76,15 +76,15 @@ contract FlapperMassBidTest is DSSTest {
         }
     }
 
-    function test_gas_search_300_for_50() public {
+    function test_gas_search_300_for_150() public {
         uint256 startGas = gasleft();
-        bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 300 - 1, 50, 15 ether);
+        bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 300 - 1, 150, 15 ether);
         emit log_named_uint("gas", startGas - gasleft());
     }
 
-    function test_gas_bid_50() public {
-        uint256[] memory auctions = new uint256[](50);
-        for (uint256 i = 0; i < 50; i++) {
+    function test_gas_bid_150() public {
+        uint256[] memory auctions = new uint256[](150);
+        for (uint256 i = 0; i < 150; i++) {
             auctions[i] = firstAuctionIndex + i;
         }
         bytes memory data = abi.encode(15 ether, auctions);
