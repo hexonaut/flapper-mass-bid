@@ -107,7 +107,7 @@ contract FlapperMassBidTest is DSSTest {
             assertEq(bid, 15 ether);
         }
 
-        GodMode.vm().warp(block.timestamp + flap.ttl());
+        GodMode.vm().warp(block.timestamp + flap.ttl() + 1);
 
         // Deal the auctions
         for (uint256 i = 0; i < numAuctions; i++) {
