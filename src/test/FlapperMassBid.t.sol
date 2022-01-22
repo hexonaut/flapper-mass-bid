@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-pragma solidity 0.8.10;
+pragma solidity 0.8.11;
 
 import "dss-test/DSSTest.sol";
 import "dss-interfaces/Interfaces.sol";
@@ -42,7 +42,7 @@ contract FlapperMassBidTest is DSSTest {
         factory = new FlapperMassBidFactory(address(mcd.vow()), address(mcd.daiJoin()));
         bidder = factory.create();
 
-        // Fire off a bunch of flap auctions
+        // Fire off a bunch of flap auctions with "zero bids"
         address(flap).setWard(address(this), 1);
         mcd.vat().setWard(address(this), 1);
         mkr.setBalance(address(this), 50_000 ether);
@@ -59,8 +59,57 @@ contract FlapperMassBidTest is DSSTest {
         assertEq(flap.kicks(), firstAuctionIndex + numAuctions - 1);
     }
 
-    function test_mass_bid() public {
+    function test_bid_5() public {
+        (uint256 numAuctions, bytes memory data) = bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 4, 5, 15 ether);
+        assertEq(numAuctions, 5);
 
+        // Should bid the first five auctions to 15 MKR
+        uint256 prevBalance = mkr.balanceOf(address(this));
+        bidder.execute(data);
+        assertEq(mkr.balanceOf(address(this)), prevBalance - 5 * 15 * WAD);
+        for (uint256 i = 0; i < numAuctions; i++) {
+            (uint256 bid,,,,) = flap.bids(firstAuctionIndex + i);
+            assertEq(bid, 15 ether);
+        }
+    }
+
+    function test_gas_search_300_for_50() public {
+        uint256 startGas = gasleft();
+        bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 300 - 1, 50, 15 ether);
+        emit log_named_uint("gas", gasleft() - startGas);
+    }
+
+    function test_gas_bid_50() public {
+        uint256[] memory auctions = new uint256[](50);
+        for (uint256 i = 0; i < 50; i++) {
+            auctions[i] = firstAuctionIndex + i;
+        }
+        bytes memory data = abi.encode(15 ether, auctions);
+
+        uint256 startGas = gasleft();
+        bidder.execute(data);
+        emit log_named_uint("gas", gasleft() - startGas);
+    }
+
+    function test_bid_deal_5() public {
+        (uint256 numAuctions, bytes memory data) = bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 4, 5, 15 ether);
+        assertEq(numAuctions, 5);
+
+        // Should bid the first five auctions to 15 MKR
+        uint256 prevBalance = mkr.balanceOf(address(this));
+        bidder.execute(data);
+        assertEq(mkr.balanceOf(address(this)), prevBalance - 5 * 15 * WAD);
+        for (uint256 i = 0; i < numAuctions; i++) {
+            (uint256 bid,,,,) = flap.bids(firstAuctionIndex + i);
+            assertEq(bid, 15 ether);
+        }
+
+        GodMode.vm().warp(block.timestamp + flap.ttl());
+
+        // Deal the auctions
+        for (uint256 i = 0; i < numAuctions; i++) {
+            flap.deal(firstAuctionIndex + i);
+        }
     }
 
 }

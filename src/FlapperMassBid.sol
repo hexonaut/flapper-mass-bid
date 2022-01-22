@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-pragma solidity 0.8.10;
+pragma solidity 0.8.11;
 
 import {
     VowAbstract,
@@ -73,11 +73,11 @@ contract FlapperMassBid {
         for (i = startAuctionIndex; i <= endAuctionIndex; i++) {
             (uint256 bid,, address guy, uint48 tic, uint48 end) = flap.bids(i);
 
-            if (guy == address(0)) continue;                               // Auction doesn't exist
-            if (tic <= block.timestamp && tic != 0) continue;     // Auction finished
-            if (end > block.timestamp) continue;                           // Auction end
-            if (mkrBidInWads <= bid) continue;                             // Bid not high enough
-            if (mkrBidInWads * WAD < beg * bid) continue;                   // Bid increase is not above beg
+            if (guy == address(0)) continue;                    // Auction doesn't exist
+            if (tic <= block.timestamp && tic != 0) continue;   // Auction finished
+            if (end > block.timestamp) continue;                // Auction end
+            if (mkrBidInWads <= bid) continue;                  // Bid not high enough
+            if (mkrBidInWads * WAD < beg * bid) continue;       // Bid increase is not above beg
 
             if (numAuctions < maxAuctionsToBid) {
                 // Always append if not full
