@@ -18,14 +18,49 @@ pragma solidity 0.8.10;
 import "dss-test/DSSTest.sol";
 import "dss-interfaces/Interfaces.sol";
 
+import "../FlapperMassBid.sol";
+
 contract FlapperMassBidTest is DSSTest {
+
+    using GodMode for *;
+
+    FlapAbstract flap;
+    DSTokenAbstract mkr;
+    FlapperMassBidFactory factory;
+    FlapperMassBid bidder;
+
+    uint256 firstAuctionIndex;
 
     function setupEnv() internal virtual override returns (MCD) {
         return autoDetectEnv();
     }
 
     function postSetup() internal virtual override {
-        
+        flap = FlapAbstract(mcd.chainlog().getAddress("MCD_FLAP"));
+        mkr = DSTokenAbstract(mcd.chainlog().getAddress("MCD_GOV"));
+
+        factory = new FlapperMassBidFactory(address(mcd.vow()), address(mcd.daiJoin()));
+        bidder = factory.create();
+
+        // Fire off a bunch of flap auctions
+        address(flap).setWard(address(this), 1);
+        mcd.vat().setWard(address(this), 1);
+        mkr.setBalance(address(this), 50_000 ether);
+
+        uint256 numAuctions = 300;
+        uint256 lot = mcd.vow().bump();
+        firstAuctionIndex = flap.kicks() + 1;
+        mcd.vat().suck(address(this), address(this), numAuctions * lot);
+        for (uint256 i = 0; i < numAuctions; i++) {
+            flap.kick(lot, 0);
+            flap.tend(flap.kicks(), lot, 1);
+        }
+
+        assertEq(flap.kicks(), firstAuctionIndex + numAuctions - 1);
+    }
+
+    function test_mass_bid() public {
+
     }
 
 }

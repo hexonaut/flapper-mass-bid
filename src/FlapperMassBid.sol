@@ -41,7 +41,7 @@ contract FlapperMassBid {
     VatAbstract public immutable vat;
     DSTokenAbstract public immutable mkr;
 
-    constructor(address owner, address _vow, address _daiJoin) {
+    constructor(address _owner, address _vow, address _daiJoin) {
         owner = _owner;
         vow = VowAbstract(_vow);
         flap = FlapAbstract(vow.flapper());
@@ -73,11 +73,11 @@ contract FlapperMassBid {
         for (i = startAuctionIndex; i <= endAuctionIndex; i++) {
             (uint256 bid,, address guy, uint48 tic, uint48 end) = flap.bids(i);
 
-            if (bids[id].guy == address(0)) continue;                               // Auction doesn't exist
-            if (bids[id].tic <= block.timestamp && bids[id].tic != 0) continue;     // Auction finished
-            if (bids[id].end > block.timestamp) continue;                           // Auction end
-            if (mkrBidInWads <= bid) continue;                                      // Bid not high enough
-            if (mkrBidInWads * WAD < beg * bid)) continue;                          // Bid increase is not above beg
+            if (guy == address(0)) continue;                               // Auction doesn't exist
+            if (tic <= block.timestamp && tic != 0) continue;     // Auction finished
+            if (end > block.timestamp) continue;                           // Auction end
+            if (mkrBidInWads <= bid) continue;                             // Bid not high enough
+            if (mkrBidInWads * WAD < beg * bid) continue;                   // Bid increase is not above beg
 
             if (numAuctions < maxAuctionsToBid) {
                 // Always append if not full
@@ -114,14 +114,14 @@ contract FlapperMassBid {
     function execute (bytes calldata data) external {
         require(msg.sender == owner, "only-owner");
 
-        (uint256 bid, uint256[] memory auctions) = abi.decode(data, (uint256, uint256[] memory));
+        (uint256 bid, uint256[] memory auctions) = abi.decode(data, (uint256, uint256[]));
         uint256 lot = vow.bump();
 
         // At most you will need bid * numAuctions MKR
         mkr.transferFrom(owner, address(this), bid * auctions.length);
 
         for (uint256 i = 0; i < auctions.length; i++) {
-            try flap.tend(auctions[i], lot, bid) catch {
+            try flap.tend(auctions[i], lot, bid) {} catch {
                 // Carry on if one of the bids fails
             }
         }
@@ -130,11 +130,27 @@ contract FlapperMassBid {
         mkr.transfer(owner, mkr.balanceOf(address(this)));
     }
 
-    function extractDAI(DSTokenAbstract token) {
+    function extractDAI(DSTokenAbstract token) external {
         require(msg.sender == owner, "only-owner");
 
         // Pull DAI out of vat (if any)
         daiJoin.exit(owner, vat.dai(address(this)) / RAY);
+    }
+
+}
+
+contract FlapperMassBidFactory {
+
+    address public immutable vow;
+    address public immutable daiJoin;
+
+    constructor(address _vow, address _daiJoin) {
+        vow = _vow;
+        daiJoin = _daiJoin;
+    }
+
+    function create() external returns (FlapperMassBid) {
+        return new FlapperMassBid(msg.sender, vow, daiJoin);
     }
 
 }
