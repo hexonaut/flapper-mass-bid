@@ -66,16 +66,15 @@ contract FlapperMassBid {
         require(mkr.balanceOf(owner) >= mkrBidInWads * maxAuctionsToBid, "not-enough-mkr-in-your-wallet");
         require(mkr.allowance(owner, address(this)) >= mkrBidInWads * maxAuctionsToBid, "not-enough-mkr-allowance");
 
-        uint256 i;
         uint256 beg = flap.beg();
         AuctionCandidate[] memory candidates = new AuctionCandidate[](maxAuctionsToBid);
 
-        for (i = startAuctionIndex; i <= endAuctionIndex; i++) {
+        for (uint256 i = startAuctionIndex; i <= endAuctionIndex; i++) {
             (uint256 bid,, address guy, uint48 tic, uint48 end) = flap.bids(i);
 
             if (guy == address(0)) continue;                    // Auction doesn't exist
             if (tic <= block.timestamp && tic != 0) continue;   // Auction finished
-            if (end > block.timestamp) continue;                // Auction end
+            if (end <= block.timestamp) continue;               // Auction end
             if (mkrBidInWads <= bid) continue;                  // Bid not high enough
             if (mkrBidInWads * WAD < beg * bid) continue;       // Bid increase is not above beg
 
@@ -102,12 +101,14 @@ contract FlapperMassBid {
                 }
             }
 
-            uint256[] memory auctions = new uint256[](numAuctions);
-            for (i = 0; i < numAuctions; i++) {
-                auctions[i] = candidates[i].auction;
-            }
+            {
+                uint256[] memory auctions = new uint256[](numAuctions);
+                for (uint256 o = 0; o < numAuctions; o++) {
+                    auctions[o] = candidates[o].auction;
+                }
 
-            data = abi.encode(mkrBidInWads, auctions);        // Encode for easier copy+paste
+                data = abi.encode(mkrBidInWads, auctions);        // Encode for easier copy+paste
+            }
         }
     }
 

@@ -41,11 +41,14 @@ contract FlapperMassBidTest is DSSTest {
 
         factory = new FlapperMassBidFactory(address(mcd.vow()), address(mcd.daiJoin()));
         bidder = factory.create();
+        mkr.approve(address(bidder), type(uint256).max);
 
         // Fire off a bunch of flap auctions with "zero bids"
         address(flap).setWard(address(this), 1);
         mcd.vat().setWard(address(this), 1);
         mkr.setBalance(address(this), 50_000 ether);
+        mcd.vat().hope(address(flap));
+        mkr.approve(address(flap), type(uint256).max);
 
         uint256 numAuctions = 300;
         uint256 lot = mcd.vow().bump();
@@ -66,7 +69,7 @@ contract FlapperMassBidTest is DSSTest {
         // Should bid the first five auctions to 15 MKR
         uint256 prevBalance = mkr.balanceOf(address(this));
         bidder.execute(data);
-        assertEq(mkr.balanceOf(address(this)), prevBalance - 5 * 15 * WAD);
+        assertEq(mkr.balanceOf(address(this)), prevBalance + 5 - 5 * 15 * WAD);
         for (uint256 i = 0; i < numAuctions; i++) {
             (uint256 bid,,,,) = flap.bids(firstAuctionIndex + i);
             assertEq(bid, 15 ether);
@@ -98,7 +101,7 @@ contract FlapperMassBidTest is DSSTest {
         // Should bid the first five auctions to 15 MKR
         uint256 prevBalance = mkr.balanceOf(address(this));
         bidder.execute(data);
-        assertEq(mkr.balanceOf(address(this)), prevBalance - 5 * 15 * WAD);
+        assertEq(mkr.balanceOf(address(this)), prevBalance + 5 - 5 * 15 * WAD);
         for (uint256 i = 0; i < numAuctions; i++) {
             (uint256 bid,,,,) = flap.bids(firstAuctionIndex + i);
             assertEq(bid, 15 ether);
