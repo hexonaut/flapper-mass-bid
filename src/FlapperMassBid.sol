@@ -67,9 +67,10 @@ contract FlapperMassBid {
         require(mkr.allowance(owner, address(this)) >= mkrBidInWads * maxAuctionsToBid, "not-enough-mkr-allowance");
 
         uint256 beg = flap.beg();
+        uint256 i;
         AuctionCandidate[] memory candidates = new AuctionCandidate[](maxAuctionsToBid);
 
-        for (uint256 i = startAuctionIndex; i <= endAuctionIndex; i++) {
+        for (i = startAuctionIndex; i <= endAuctionIndex; i++) {
             (uint256 bid,, address guy, uint48 tic, uint48 end) = flap.bids(i);
 
             if (guy == address(0)) continue;                    // Auction doesn't exist
@@ -100,16 +101,14 @@ contract FlapperMassBid {
                     candidates[largestBidCandidate.index] = AuctionCandidate(largestBidCandidate.index, i, bid);
                 }
             }
-
-            {
-                uint256[] memory auctions = new uint256[](numAuctions);
-                for (uint256 o = 0; o < numAuctions; o++) {
-                    auctions[o] = candidates[o].auction;
-                }
-
-                data = abi.encode(mkrBidInWads, auctions);        // Encode for easier copy+paste
-            }
         }
+
+        uint256[] memory auctions = new uint256[](numAuctions);
+        for (i = 0; i < numAuctions; i++) {
+            auctions[i] = candidates[i].auction;
+        }
+
+        data = abi.encode(mkrBidInWads, auctions);        // Encode for easier copy+paste
     }
 
     function execute (bytes calldata data) external {
@@ -131,11 +130,18 @@ contract FlapperMassBid {
         mkr.transfer(owner, mkr.balanceOf(address(this)));
     }
 
-    function extractDAI(DSTokenAbstract token) external {
+    function extractDAI() external {
         require(msg.sender == owner, "only-owner");
 
         // Pull DAI out of vat (if any)
         daiJoin.exit(owner, vat.dai(address(this)) / RAY);
+    }
+
+    function extractMKR() external {
+        require(msg.sender == owner, "only-owner");
+
+        // Pull MKR out of here (it will show up if outbid)
+        mkr.transfer(owner, mkr.balanceOf(address(this)));
     }
 
 }

@@ -113,6 +113,12 @@ contract FlapperMassBidTest is DSSTest {
         for (uint256 i = 0; i < numAuctions; i++) {
             flap.deal(firstAuctionIndex + i);
         }
+
+        assertEq(mcd.vat().dai(address(bidder)), 5 * mcd.vow().bump());
+
+        bidder.extractDAI();
+
+        assertEq(mcd.dai().balanceOf(address(this)), 5 * mcd.vow().bump() / RAY);
     }
 
 }
