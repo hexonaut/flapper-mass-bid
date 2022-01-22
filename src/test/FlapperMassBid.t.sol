@@ -65,6 +65,8 @@ contract FlapperMassBidTest is DSSTest {
     function test_bid_5() public {
         (uint256 numAuctions, bytes memory data) = bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 4, 5, 15 ether);
         assertEq(numAuctions, 5);
+        (uint256 bid, uint256[] memory auctions) = abi.decode(data, (uint256, uint256[]));
+        assertEq(auctions[0], firstAuctionIndex);
 
         // Should bid the first five auctions to 15 MKR
         uint256 prevBalance = mkr.balanceOf(address(this));
@@ -97,15 +99,7 @@ contract FlapperMassBidTest is DSSTest {
     function test_bid_deal_5() public {
         (uint256 numAuctions, bytes memory data) = bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 4, 5, 15 ether);
         assertEq(numAuctions, 5);
-
-        // Should bid the first five auctions to 15 MKR
-        uint256 prevBalance = mkr.balanceOf(address(this));
         bidder.execute(data);
-        assertEq(mkr.balanceOf(address(this)), prevBalance + 5 - 5 * 15 * WAD);
-        for (uint256 i = 0; i < numAuctions; i++) {
-            (uint256 bid,,,,) = flap.bids(firstAuctionIndex + i);
-            assertEq(bid, 15 ether);
-        }
 
         GodMode.vm().warp(block.timestamp + flap.ttl() + 1);
 
@@ -119,6 +113,41 @@ contract FlapperMassBidTest is DSSTest {
         bidder.extractVatDAI();
 
         assertEq(mcd.dai().balanceOf(address(this)), 5 * mcd.vow().bump() / RAY);
+    }
+
+    function test_outbid() public {
+        (uint256 numAuctions, bytes memory data) = bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 4, 5, 15 ether);
+        assertEq(numAuctions, 5);
+        bidder.execute(data);
+
+        assertEq(mkr.balanceOf(address(bidder)), 0);
+        uint256 prevBalance = mkr.balanceOf(address(this));
+        flap.tend(firstAuctionIndex, mcd.vow().bump(), 30 ether);
+        assertEq(mkr.balanceOf(address(this)), prevBalance - 30 ether);
+        assertEq(mkr.balanceOf(address(bidder)), 15 ether);
+
+        // Can extract MKR
+        bidder.extractMKR();
+        assertEq(mkr.balanceOf(address(bidder)), 0);
+        assertEq(mkr.balanceOf(address(this)), prevBalance - 15 ether);
+    }
+
+    function test_get_dai() public {
+        mcd.dai().setBalance(address(bidder), 100 ether);
+        assertEq(mcd.dai().balanceOf(address(this)), 0);
+        bidder.extractDAI();
+        assertEq(mcd.dai().balanceOf(address(this)), 100 ether);
+    }
+
+    function test_prioritize_low_bids() public {
+        for (uint256 i = 0; i < 10; i++) {
+            flap.tend(firstAuctionIndex + i, mcd.vow().bump(), 5 ether);
+        }
+
+        (uint256 numAuctions, bytes memory data) = bidder.findAuctions(firstAuctionIndex, firstAuctionIndex + 300 - 1, 5, 15 ether);
+        assertEq(numAuctions, 5);
+        (uint256 bid, uint256[] memory auctions) = abi.decode(data, (uint256, uint256[]));
+        assertEq(auctions[0], firstAuctionIndex + 10);
     }
 
 }
